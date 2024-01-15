@@ -5,6 +5,7 @@ weight_constraints <- function(weight_tilt,
                                lower_bound=0.01,
                                upper_bound=0.05) {
   
+  
   weight_tilt=weight_tilt + runif(n=length(weight_tilt),min=10^-6,max=10^-5)# workaround for exaclty equally weights > n_weights
   weights_constrained = case_when(weight_tilt %in% rev(sort(weight_tilt))[1:n_weights] ~ weight_tilt,.default=0)
   
@@ -13,8 +14,11 @@ weight_constraints <- function(weight_tilt,
   weights_constrained <- weight_tilt[weights_constrained_index]
   
   constraints_met = all(between(weights_constrained, lower_bound, upper_bound))
-  count=0
-  while (constraints_met == FALSE){
+  leverage_met = between(sum(abs(weights_constrained)),0.995,1.005)
+  #print(constraints_met)
+  #print(leverage_met)
+  constraint.loopcount=0
+  while (constraints_met == FALSE | leverage_met==FALSE){
     
     weights_constrained = ifelse((weights_constrained>0 & weights_constrained<lower_bound), 
                                  lower_bound, 
@@ -22,16 +26,29 @@ weight_constraints <- function(weight_tilt,
     weights_constrained = ifelse(weights_constrained>upper_bound, 
                                  upper_bound, 
                                  weights_constrained)   # weights have to be above 0.1% and below 5%, yielding generally weights between 1-10% (this could be more elegant)
-    weights_constrained = weights_constrained / sum(weights_constrained)                  # normalize such that they add up to 1 again   
+    leverage.loopcount=0
+    while (between(sum(abs(weights_constrained)),0.995,1.005)==FALSE){
+      #print(sum(abs(weights_constrained)))
+      weights_constrained = weights_constrained / sum(weights_constrained)  # normalize such that they add up to 1 again  
+      leverage_met = between(sum(abs(weights_constrained)),0.995,1.005)
+      leverage.loopcount = leverage.loopcount + 1
+      if (leverage.loopcount==250){
+        #print("leverage correction not met. Aborted")
+        {break}
+      }
+    }
+
     weights_constrained = round(weights_constrained,4)
     
-    constraints_met = all(between(weights_constrained, lower_bound, upper_bound))
-    count = count +1
-    #print(count)
+    constraints_met = all(between(weights_constrained, lower_bound, upper_bound)) # to do: add tolerance
+    constraint.loopcount = constraint.loopcount + 1
+    #print(constraint.loopcount)
+    #print(leverage.loopcount)
+    
     #print(weights_constrained)
     #print(length(weights_constrained))
     #print(sum(weights_constrained))
-    if (count==10){
+    if (constraint.loopcount==100){
       #print("weight constraints not met. Aborted")
       {break}
     } else {
@@ -203,37 +220,66 @@ compute_objective_function <- function(theta,
 # 
 # 
 # 
+#  
+
 # 
-# weights_sim.data <- compute_portfolio_weights(
-#   theta,
+# 
+# theta <- rep(0, n_parameters)
+# names(theta) <- colnames(data_window)[str_detect(
+#   colnames(data_window), "lag")]
+# 
+# optimal_theta <- psoptim(
+#      par = theta,
+#      fn = compute_objective_function,
+#      objective_measure = "Expected utility",
+#      data = data_portfolios,
+#      value_weighting = TRUE,
+#      allow_short_selling = FALSE,
+#      lower=-5,upper=5,
+#      control=list(abstol=1e-2,trace=0,REPORT=0,maxit=20,vectorize=TRUE)
+# )
+#   #   #method = "Nelder-Mead"
+#   #   method = "SANN",
+#   #   #control = list(maxit = 3000, 
+#   #   #               temp = 2000, 
+#   #   #              trace = TRUE,
+#   #   #               REPORT = 100)
+#   # )
+# # optimal_theta <- optim(
+# #   par = theta,
+# #   fn = compute_objective_function,
+# #   objective_measure = "Expected utility",
+# #   data = data_portfolios,
+# #   value_weighting = TRUE,
+# #   allow_short_selling = FALSE,
+# #   #method = "Nelder-Mead"
+# #   method = "SANN",
+# #   #control = list(maxit = 3000, 
+# #   #               temp = 2000, 
+# #   #              trace = TRUE,
+# #   #               REPORT = 100)
+# # )
+# # 
+# optimal_theta$par
+# 
+#  weights_sim.data <- compute_portfolio_weights(
+#   optimal_theta$par,
 #   data_portfolios,
 #   value_weighting = TRUE,
 #   allow_short_selling = FALSE
 # )
+#   leverage_evaluation_overall <- weights_sim.data |>
+#    group_by(month) |>
+#    mutate(leverage=sum(weight_tilt)-1) |>
+#    select (month,leverage) |>
+#    distinct()
 # 
-# 
-# 
+# sum(leverage_evaluation_overall$leverage)
+#   #
+# #
+# #
 # evaluate_portfolio(weights_sim.data) |>
 #   print(n = Inf)
-# 
-# 
-# 
-# optimal_theta <- optim(
-#   par = theta,
-#   fn = compute_objective_function,
-#   objective_measure = "Expected utility",
-#   data = data_portfolios,
-#   value_weighting = TRUE,
-#   allow_short_selling = FALSE,
-#   #method = "Nelder-Mead"
-#   method = "SANN",
-#   #control = list(maxit = 3000, 
-#   #               temp = 2000, 
-#   #              trace = TRUE,
-#   #               REPORT = 100)
-# )
-# 
-# optimal_theta$par
 
 ########################################################################################
 ################################## END OF SCRIPT #######################################  
