@@ -72,6 +72,9 @@ library(readODS)
 library(roll)
 library(frenchdata)
 
+## particple swarm optimization
+library(pso)
+
 
 
 ########################################################################################
@@ -110,7 +113,7 @@ country2 <- "Stoxx_600_25Y"
 # time horizon over which optimization takes place (e.g. the past 25 years)
 timehorizon = 120 # how far back should the optimization start? 
 
-opt_window  = 60   # window of time periods, that is used in the optimization function (e.g. 5 years of data)
+opt_window  = 120   # window of time periods, that is used in the optimization function (e.g. 5 years of data)
 # mind that the optimization takes past data to run. You need at least [timehorizon + optimization window size] months of data
 
 rolling_window=TRUE  # alternatively: expanding window
@@ -118,6 +121,8 @@ rolling_window=TRUE  # alternatively: expanding window
 #optimization starting values
 starting_value_OLS=FALSE # otherwise vector of zeros as starting value for optimization
 
+#particle swarm optimization
+particleswarm=TRUE
 # delete not used objects at the end of each script?
 # cleanup=TRUE
 
