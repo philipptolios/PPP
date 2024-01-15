@@ -8,3 +8,6 @@ The Review of Financial Studies, Vol. 22, Issue 9, pp. 3411-3447, 2009, Availabl
 Model Implementation: https://www.tidy-finance.org/r/index.html
 
 This README is a work in progress. 
+
+
+![Coefficients of PPP](/PPP/material/PPP_6coef_pso_10y_coefplot.png?raw=true "Coefficients of PPP")
