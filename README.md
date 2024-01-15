@@ -14,11 +14,8 @@ Optimization window: 10 year (120 month) rolling window.
 Optimization routine: Particle swarm optimization (PSO) 
 Portfolio weight constraints: long only, top 50 weight, 1% <= weight_i <= 5%
 
+![Histogram of monthly excess returns](/material/PPP_6coef_pso_10y_returnhist.png?raw=true "Coefficients of PPP")
+![Accumulated monthly Returns](/material/PPP_6coef_pso_10y_accreturn.png?raw=true "Accumulated excess returns")
 ![Coefficients of PPP](/material/PPP_6coef_pso_10y_coefplot.png?raw=true "Coefficients of PPP")
 
 
-![Accumulated monthly Returns](/material/PPP_6coef_pso_10y_accreturn.png?raw=true "Accumulated excess returns")
-
-
-
-![Histogram of monthly excess returns](/material/PPP_6coef_pso_10y_returnhist.png?raw=true "Coefficients of PPP")
