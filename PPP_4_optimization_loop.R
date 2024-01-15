@@ -35,7 +35,9 @@ top100_stocks = sim.data |>
   ungroup() |> distinct(stock, .keep_all = TRUE) |>
   mutate(top100_dummy=case_when(top100 %in% rev(sort(top100))[1:100] ~ 1,.default=0))
 
-sim.data <- merge(sim.data, top100_stocks[,c("stock","top100_dummy")], by="stock") 
+sim.data <- sim.data |> 
+  left_join(top100_stocks[,c("stock","top100_dummy")], 
+            by="stock") 
 
 sim.data <- sim.data |> 
   group_by(month) |> 
@@ -119,21 +121,34 @@ for(i in 1:timehorizon){
   } else {  # if not OLS as starting values --> vector of zeros
     theta <- rep(0, n_parameters)
     names(theta) <- colnames(data_window)[str_detect(
-      colnames(data_window), "lag"
-    )]
+      colnames(data_window), "lag")]
   }
   
   # optimization routine with zero starting values
-  optimal_theta <- optim(
-    par = theta,                      # theta0 for 0 as starting value; alternatively "theta" for OLS starting values and last optimization result otherwise
-    fn = compute_objective_function,
-    objective_measure = "Expected utility",
-    data = data_window,
-    value_weighting = TRUE,
-    allow_short_selling = FALSE,
-    method = "Nelder-Mead"
-    #method = "SANN"
-  )
+  if (particleswarm==TRUE){
+    optimal_theta <- psoptim(     # particle swarm optimization [experiment]
+      par = theta,
+      fn = compute_objective_function,
+      objective_measure = "Expected utility",
+      data = data_window,
+      value_weighting = TRUE,
+      allow_short_selling = FALSE,
+      lower=-10,upper=10,
+      control=list(abstol=1e-2,trace=0,REPORT=0,maxit=30,vectorize=TRUE)
+    )
+  }else{
+    optimal_theta <- optim(
+      par = theta,                      # theta0 for 0 as starting value; alternatively "theta" for OLS starting values and last optimization result otherwise
+      fn = compute_objective_function,
+      objective_measure = "Expected utility",
+      data = data_window,
+      value_weighting = TRUE,
+      allow_short_selling = FALSE,
+      method = "Nelder-Mead"
+      #method = "SANN"
+    )
+  }
+  
   # store resulting optimization coefficients
   coef = optimal_theta$par
   coef_save[i,-1] = t(coef)
@@ -198,7 +213,7 @@ export.weights <- portfolios_long |>
   mutate(month = month %m+% months(1)) |>
   arrange(month) |> filter(weight_tilt!=0)
 
-write_ods(export.weights, paste("ppp", country, n_parameters, "char_portfolio_weights_zero_nopenny.ods", sep="_")) # export .ods file
+write_ods(export.weights, paste("ppp", country, n_parameters, "char_portfolio_weights_pso_10ywin_nopenny.ods", sep="_")) # export .ods file
 
 
 ########################################################################################
