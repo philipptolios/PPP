@@ -17,7 +17,7 @@ Portfolio weight constraints: long only, top 50 weight, 1% <= weight_i <= 5%
 ![Coefficients of PPP](/material/PPP_6coef_pso_10y_coefplot.png?raw=true "Coefficients of PPP")
 
 
-![Accumulated monthly Returns](/material/PPPP_6coef_pso_10y_accreturn.png?raw=true "Accumulated excess returns")
+![Accumulated monthly Returns](/material/PPP_6coef_pso_10y_accreturn.png?raw=true "Accumulated excess returns")
 
 
 
