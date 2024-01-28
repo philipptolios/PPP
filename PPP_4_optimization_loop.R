@@ -1,3 +1,31 @@
+### Parametric Portfolio Policies Model
+## PMP Academic Team
+## Version 2.0
+
+## PPP optimization
+
+## last changes 2024/01/11
+
+################################################################################
+#This is the optimization script for the Parametric Portfolio Policy (PPP) model 
+#
+# This script runs the optimization (the loop only serves to "backtest" the model for the past XYZ months)
+# 
+#
+# 
+# Input: this script takes the cleaned and pre-processed data after running the "PPP_2_data_loading.R" script as input
+# Output: it returns a list of past optimization weights as .csv file
+#         
+#
+# Note: - 
+#
+################################################################################
+
+
+
+
+
+
 
 ###------------------------- Optimization loop---------------------------------###
 vector_months <- sim.data |> 
@@ -213,7 +241,7 @@ export.weights <- portfolios_long |>
   mutate(month = month %m+% months(1)) |>
   arrange(month) |> filter(weight_tilt!=0)
 
-write_ods(export.weights, paste("ppp", country, n_parameters, "char_portfolio_weights_pso_10ywin_nopenny.ods", sep="_")) # export .ods file
+write_ods(export.weights, paste(path.output, "ppp", country, n_parameters, "char_portfolio_weights_pso_10ywin_nopenny.ods", sep="_")) # export .ods file
 
 
 ########################################################################################

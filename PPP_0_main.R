@@ -4,7 +4,7 @@
 
 ## main script
 
-## last changes 2024/01/11
+## last changes 2024/01/28
 
 ################################################################################
 #This is the main script for the Parametric Portfolio Policy (PPP) model 
@@ -71,6 +71,11 @@ library(optimParallel)
 library(readODS)
 library(roll)
 library(frenchdata)
+library(readxl)
+library(tidyr)
+library(stringr)
+library(janitor)
+library(purrr)
 
 ## particple swarm optimization
 library(pso)
@@ -90,9 +95,13 @@ try(if(between(trim.price,0,100)==FALSE) stop("trim parameter needs to be betwee
 # CRRA Risk aversion parameter
 #gamma = 5 
 
+## input raw data paths
+path.rawdata <- "Insert the path to raw data here" #make sure your wd only contains .xlsx files you want to import 
+
+
 ## input file paths
-path <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\2024_01\\SPX 25Y\\"
-path2 <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\2024_01\\STOXX 600 25Y\\"
+path.data <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\2024_01\\SPX 25Y\\"
+path2.data <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\2024_01\\STOXX 600 25Y\\"
 
 ## output file paths
 path.output = "C:\\Users\\pako1\\Desktop\\PMP\\0_PPP tidyfinance\\Output 2024-01-10\\"
@@ -128,6 +137,13 @@ particleswarm=TRUE
 
 # to ensure reproducability
 set.seed(123)
+
+
+########################################################################################
+# Step 1: Load and clean raw data
+########################################################################################
+## To do: check respective parameters
+source(paste0(path.program,"\\PPP_1_data_cleaning.R"), echo=TRUE, max.deparse.length=10000, keep.source=TRUE)
 
 ########################################################################################
 # Step 2: Load Data

@@ -1,10 +1,34 @@
-### Diagnostics
+### Parametric Portfolio Policies Model
+## PMP Academic Team
+## Version 2.0
+
+## PPP diagnostics
+
+## last changes 2024/01/11
+
+################################################################################
+#This is the diagnostics script for the Parametric Portfolio Policy (PPP) model 
+#
+# This script compares different portfolios with each other, computes returns and other diagnostic metrics (Sharpe, Sortino rations, alpha, beta)
+# creates plots for there metrics as well as plots the coefficients of the optimization
+#
+# 
+# Input: it takes the data with portfolio weights after runnning the optimization as input
+# Output: it creates several plots and stores them in the output path folder
+# 
+#
+# Note: to do: create a function that gives different diagnostic metrics as a tidy output (adapt evaluate_portfolio() )
+#
+################################################################################
+
+
 
 #################### compute returns for different portfolios   #################### 
 # match stocks with computed weights with returns of following period
 # ( computing portfolio returns needs weights * next_period returns)
 
-portfolio_weights_lagged <- portfolios_long |> arrange(stock, month) |>
+portfolio_weights_lagged <- portfolios_long |> 
+  arrange(stock, month) |>
   mutate(month = month %m+% months(1)) |>
   select(-ret_excess) |>
   left_join(select(sim.data, month, stock, ret_excess), by = c("month", "stock")) |>
@@ -23,6 +47,15 @@ evaluate_portfolio(portfolio_weights_lagged) |>
 
 ######################### Diagnostics ####################################
 ### backtesting ###
+leverage_evaluation <- portfolios_long |> 
+  mutate(month = month %m+% months(1)) |>
+  group_by(month) |> 
+  mutate(leverage=sum(weight_tilt)-1) |> 
+  select (month,leverage) |> 
+  distinct()
+# --> leverage could be plotted as well!
+
+sum(leverage_evaluation$leverage)
 
 # compute returns for different portfolios
 portfolio_weights_lagged = portfolio_weights_lagged |> 
@@ -33,6 +66,8 @@ portfolio_weights_lagged = portfolio_weights_lagged |>
          PPPlong50_return = ret_excess * weight_tilt,
          top100_mom_ret   = ret_excess * weight_top100_mom
   )
+
+
 
 ##################
 
@@ -159,6 +194,10 @@ for(i in 1:timehorizon){
 
 diagnostics_mom <- diagnostics_mom |>
   left_join(evaluation, by="month")
+
+diagnostics_mom <- diagnostics_mom |>
+  left_join(leverage_evaluation, by="month")
+
 ######################## plots #######################
 # test <- portfolios_long |> 
 #   pivot_longer(cols=-month, names_to = "portfolio", values_to="return") ### here delete "acc_"; rename portfolios
@@ -176,7 +215,7 @@ df <- diagnostics_mom |>
 dfmean <- df |> group_by(portfolio) |> summarise(meanreturns=mean(return))
 
 ## histogram of monthly returns 
-ggplot(df, aes(x = return, fill = portfolio)) + 
+plot <- ggplot(df, aes(x = return, fill = portfolio)) + 
   facet_wrap(~portfolio, scales = "free_y", ncol = 1) +
   geom_histogram(alpha = 0.5, position = "identity", binwidth = 0.5) + 
   scale_x_continuous(breaks = seq(-20, 50, 5)) +
@@ -184,7 +223,7 @@ ggplot(df, aes(x = return, fill = portfolio)) +
   geom_vline(data= dfmean, aes(xintercept=meanreturns), color="red", size=0.5) + 
   geom_density(kernel = "epanechnikov", adjust=1/2) + labs(title="Returns (MoM, %) of different Portfolios") +
   guides(fill = guide_legend(title = "Portfolios")) #+ 
-#scale_fill_hue(labels = eval_models)
+ggsave(paste(path.output, "ppp", country, n_parameters, "returns_histogram.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
 
 
 ## histogram of monthly excess returns 
@@ -196,13 +235,14 @@ df <- diagnostics_mom |>
 dfmean <- df |> group_by(portfolio) |> summarise(meanreturns=mean(return))
 
 ## histogram of monthly excess returns 
-ggplot(df, aes(x = return, fill = portfolio)) + 
+plot <- ggplot(df, aes(x = return, fill = portfolio)) + 
   facet_wrap(~ portfolio, scales = "free_y", ncol = 1) +
   geom_histogram(alpha = 0.5, position = "identity", binwidth = 0.25) + 
   geom_vline(xintercept=0, color="darkgrey", linewidth=0.5) + 
   geom_vline(data= dfmean, aes(xintercept=meanreturns), color="red", size=0.5) + 
   geom_density() + labs(title="Excess returns (MoM, %) of different Portfolios") +
   guides(fill = guide_legend(title = "Portfolios"))
+ggsave(paste(path.output, "ppp", country, n_parameters, "excess-ret_histogram.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
 
 
 
@@ -214,12 +254,13 @@ df <- diagnostics_mom |>
   pivot_longer(cols=-month, names_to = "portfolio", values_to="return") ### here delete "acc_"; rename portfolios
 
 
-ggplot(df, aes(x = month, y = return, group = portfolio)) + geom_line(aes(col = portfolio)) +
+plot <- ggplot(df, aes(x = month, y = return, group = portfolio)) + geom_line(aes(col = portfolio)) +
   scale_color_discrete(name="Portfolio") + 
   theme(axis.text.x = element_text(color="#000000", size=8, angle=90)) +
   scale_y_continuous(breaks = seq(0,200,10)) +
   scale_x_date(breaks="3 months", date_labels = "%m / %Y") +
   labs(title="Accumulated Excess Rate of Returns", x = "Dates", y = "accumulated excess returns (in %)")
+ggsave(paste(path.output, "ppp", country, n_parameters, "acc_returns.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
 
 
 
@@ -230,11 +271,12 @@ df <- diagnostics_mom |>
   pivot_longer(cols=-month, names_to = "portfolio", values_to="Average return") ### here delete "acc_"; rename portfolios
 
 
-ggplot(df, aes(x = month, y = `Average return`, group = portfolio)) + geom_line(aes(col = portfolio)) +
+plot <- ggplot(df, aes(x = month, y = `Average return`, group = portfolio)) + geom_line(aes(col = portfolio)) +
   scale_color_discrete(name="Portfolio") + # labels at position 1: "PPP long-short whole univ.", 
   theme(axis.text.x = element_text(color="#000000", size=8, angle=90)) +
   scale_x_date(breaks="3 months", date_labels = "%m / %Y") +
   labs(title="Averaged annualized Excess Rate of Returns", x = "Dates", y = "Avg. excess returns (in %)")
+ggsave(paste(path.output, "ppp", country, n_parameters, "avg._excess_returns.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
 
 
 #### Sharpe Ratio
@@ -244,11 +286,12 @@ df <- diagnostics_mom |>
   pivot_longer(cols=-month, names_to = "portfolio", values_to="Sharpe ratio") ### here delete "acc_"; rename portfolios
 
 
-ggplot(df, aes(x = month, y = `Sharpe ratio`, group = portfolio)) + geom_line(aes(col = portfolio)) +
+plot <- ggplot(df, aes(x = month, y = `Sharpe ratio`, group = portfolio)) + geom_line(aes(col = portfolio)) +
   scale_color_discrete(name="Portfolio") + # labels at position 1: "PPP long-short whole univ.", 
   theme(axis.text.x = element_text(color="#000000", size=8, angle=90)) +
   scale_x_date(breaks="3 months", date_labels = "%m / %Y") +
   labs(title="Sharpe ratio (past 12 months)", x = "Dates", y = "Sharpe Ratio")
+ggsave(paste(path.output, "ppp", country, n_parameters, "sharpe_ratio.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
 
 #### Sortino Ratio
 df <- diagnostics_mom |>
@@ -257,11 +300,12 @@ df <- diagnostics_mom |>
   pivot_longer(cols=-month, names_to = "portfolio", values_to="Sortino ratio") ### here delete "acc_"; rename portfolios
 
 
-ggplot(df, aes(x = month, y = `Sortino ratio`, group = portfolio)) + geom_line(aes(col = portfolio)) +
+plot <- ggplot(df, aes(x = month, y = `Sortino ratio`, group = portfolio)) + geom_line(aes(col = portfolio)) +
   scale_color_discrete(name="Portfolio") + # labels at position 1: "PPP long-short whole univ.", 
   theme(axis.text.x = element_text(color="#000000", size=8, angle=90)) +
   scale_x_date(breaks="3 months", date_labels = "%m / %Y") +
   labs(title="Sortino ratio (past 12 months)", x = "Dates", y = "Sortino Ratio")
+ggsave(paste(path.output, "ppp", country, n_parameters, "sortino_ratio.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
 
 
 #### CAPM alpha
@@ -271,11 +315,13 @@ df <- diagnostics_mom |>
   pivot_longer(cols=-month, names_to = "portfolio", values_to="CAPM alpha") ### here delete "acc_"; rename portfolios
 
 
-ggplot(df, aes(x = month, y = `CAPM alpha`, group = portfolio)) + geom_line(aes(col = portfolio)) +
+plot <- ggplot(df, aes(x = month, y = `CAPM alpha`, group = portfolio)) + geom_line(aes(col = portfolio)) +
   scale_color_discrete(name="Portfolio") + # labels at position 1: "PPP long-short whole univ.", 
   theme(axis.text.x = element_text(color="#000000", size=8, angle=90)) +
   scale_x_date(breaks="3 months", date_labels = "%m / %Y") +
   labs(title="CAPM alpha (past 12 months)", x = "Dates", y = "CAPM alpha")
+ggsave(paste(path.output, "ppp", country, n_parameters, "CAPM_alpha.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
+
 
 
 #### Market beta
@@ -285,11 +331,12 @@ df <- diagnostics_mom |>
   pivot_longer(cols=-month, names_to = "portfolio", values_to="Market beta") ### here delete "acc_"; rename portfolios
 
 
-ggplot(df, aes(x = month, y = `Market beta`, group = portfolio)) + geom_line(aes(col = portfolio)) +
+plot <- ggplot(df, aes(x = month, y = `Market beta`, group = portfolio)) + geom_line(aes(col = portfolio)) +
   scale_color_discrete(name="Portfolio") + # labels at position 1: "PPP long-short whole univ.", 
   theme(axis.text.x = element_text(color="#000000", size=8, angle=90)) +
   scale_x_date(breaks="3 months", date_labels = "%m / %Y") +
   labs(title="Market beta (past 12 months)", x = "Dates", y = "Market beta")
+ggsave(paste(path.output, "ppp", country, n_parameters, "market_beta.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
 
 
 #plot of coefficients
@@ -317,13 +364,14 @@ dfm <- df |>
 
 #colnames(dfm) = c("month", "characteristic", "coefficients")
 # plotting diagnostics for "PPP long-top50"
-ggplot(dfm, aes(x = month, y = coefficients, group =characteristic )) + 
+plot <- ggplot(dfm, aes(x = month, y = coefficients, group =characteristic )) + 
   geom_line(aes(col = characteristic)) +
   facet_wrap(~ characteristic, scales = "free_y", ncol = 1) +
   geom_hline(yintercept=0, color="darkgrey") + 
   theme(axis.text.x = element_text(color="#000000", size=8, angle=90)) +
   scale_x_date(breaks="3 months", date_labels = "%m / %Y") +
   labs(title="Optimization Factor Coefficients (scaled)", x = "Dates", y = "Factor Coefficients (scaled)")
+ggsave(paste(path.output, "ppp", country, n_parameters, "coefs.svg", sep="_"), plot, height = 5, width = 12, dpi = "screen")
 
 
 ########################################################################################

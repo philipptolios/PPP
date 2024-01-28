@@ -7,7 +7,7 @@
 ## last changes 2024/01/11
 
 ################################################################################
-#This is the data preprocessing script for the Parametric Portfolio Policy (PPP) model 
+#This is the data pre-processing script for the Parametric Portfolio Policy (PPP) model 
 #
 # This script loads the data files after they've been cleaned by "--Pauls data cleaning file's name----" 
 # It combines different countries (if applicable) and characteristics, 
@@ -15,56 +15,29 @@
 # (https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html),
 # creates long format data and deletes all NA observations. nd ll variables and parameters that are needed in running the PPP
 # 
-# --> It points towards other specialized scripts for operations
-# --> Input: filepaths for in- and output locations, parameters for optimization and diagnostics
-# --> new features should be implemented either in the specialized scripts or via new Scripts
-# --> every script has a header like this. 
-#
-#     Key information to be stored in the header: 
-#     - What does the file do?
-#     - What does it take as input?
-#     - What does it produce as output?
-#     - important notes
 #
 # Notes:
 # IT'S A TOTAL MESS AND DESPERATELY NEEDS TO BE PROGRAMMED IN A MORE FLEXIBLE AND LESS HARD-CODED WAY!!
 ################################################################################
-#
-# Summary:
-# 
-# Step 1: load needed libraries
-# Step 2: load and preprocess data
-# Step 3: define functions (developers only! no data handling here!)
-# Step 4: PPP optimization
-# Step 5: export weights
-# Step 6: diagnostics & plots
-#
-################################################################################
-
-
-
-
-
-
 
 
 ################################# load data
 
 
-px   <- read_csv(paste0(path,country, "_price_data.csv"))
-rets <- read_csv(paste0(path,country, "_returns_data.csv"))
-mtb  <- read_csv(paste0(path,country, "_mrkt2book_data.csv"))
-mc   <- read_csv(paste0(path,country, "_mrktvl_data.csv"))
-per  <- read_csv(paste0(path,country, "_PER_data.csv"))
-bt   <- read_csv(paste0(path,country, "_beta_data.csv"))
+px   <- read_csv(paste0(path.data,country, "_price_data.csv"))
+rets <- read_csv(paste0(path.data,country, "_returns_data.csv"))
+mtb  <- read_csv(paste0(path.data,country, "_mrkt2book_data.csv"))
+mc   <- read_csv(paste0(path.data,country, "_mrktvl_data.csv"))
+per  <- read_csv(paste0(path.data,country, "_PER_data.csv"))
+bt   <- read_csv(paste0(path.data,country, "_beta_data.csv"))
 
 
-px2   <- read_csv(paste0(path2,country2, "_price_data.csv"))
-rets2 <- read_csv(paste0(path2,country2, "_returns_data.csv"))
-mtb2  <- read_csv(paste0(path2,country2, "_mrkt2book_data.csv"))
-mc2   <- read_csv(paste0(path2,country2, "_mrktvl_data.csv"))
-per2  <- read_csv(paste0(path2,country2, "_PER_data.csv"))
-bt2   <- read_csv(paste0(path2,country2, "_beta_data.csv"))
+px2   <- read_csv(paste0(path2.data,country2, "_price_data.csv"))
+rets2 <- read_csv(paste0(path2.data,country2, "_returns_data.csv"))
+mtb2  <- read_csv(paste0(path2.data,country2, "_mrkt2book_data.csv"))
+mc2   <- read_csv(paste0(path2.data,country2, "_mrktvl_data.csv"))
+per2  <- read_csv(paste0(path2.data,country2, "_PER_data.csv"))
+bt2   <- read_csv(paste0(path2.data,country2, "_beta_data.csv"))
 #characteristics=c("Market to book", "P/E-Ratio","Beta", "Market Cap.")
 
 
@@ -210,7 +183,7 @@ sim.data$month = as.Date(paste("01/",sim.data$month, sep=""), format='%d/%m/%Y')
 start_date <- min(sim.data$month)
 end_date <- max(sim.data$month)
 
-factors_ff3_monthly_raw <- download_french_data("Fama/French 3 Factors")
+#factors_ff3_monthly_raw <- download_french_data("Fama/French 3 Factors")
 factors_ff3_monthly <- factors_ff3_monthly_raw$subsets$data[[1]] |>
   mutate(
     month = floor_date(ymd(str_c(date, "01")), "month"),

@@ -1,3 +1,32 @@
+### Parametric Portfolio Policies Model
+## PMP Academic Team
+## Version 2.0
+
+## defining functions for PPP
+
+## last changes 2024/01/11
+
+################################################################################
+#This is the data cleaning script for the Parametric Portfolio Policy (PPP) model 
+#
+# This script does not deal with data at all.
+# It defines all functions that are used in other parts of the program
+# 
+#
+# 
+# Input: this script does not take any input
+# Output: it defines all functions 
+#         
+#
+# Note: if you want to test the functionality of a new / changed function, use the test section at the end of this script.
+#       running new functions in the optimization loop can take a lot of time
+#
+################################################################################
+
+
+
+
+
 
 weight_constraints <- function(weight_tilt,
                                #portfolio_type = "long_only",
