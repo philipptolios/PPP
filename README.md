@@ -9,6 +9,17 @@ Model Implementation: https://www.tidy-finance.org/r/index.html
 
 This README is a work in progress. 
 
+Topics: 
+factors (basline idea, which factos? using firm fundamentals, non-linearity & interactions)
+data (data sources, issues with cleaning)
+data pre-processing (standardization, macro, truncating returns, dealing with penny-stocks)
+utility (accounting for risk)
+optimization (routine, rolling vs. expanding window, optimizing over alternative objective functions)
+weights (constraints, shorting, leverage)
+benchmark portfolios (equally weighted, value weighted)
+factor coefficients (non-singular solutions --> rescaling)
+diagnostics (benchmark portfolios, monthly returns [skewness, kurtosis], risk adjusted returns (sharpe ratio, sortino ratio), CAPM alpha, market beta, factor coefficients)
+
 ## Model specifications
 Optimization window: 10 year (120 month) rolling window. 
 Optimization routine: Particle swarm optimization (PSO) 
