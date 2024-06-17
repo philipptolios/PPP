@@ -23,56 +23,76 @@
 #
 ################################################################################
 
+#set working directory to where your data file is. Output will also be saved there
+setwd("C:\\Users\\paulk\\OneDrive - Humboldt-Universitaet zu Berlin, CMS\\Master_VWL\\PMP\\Code\\data")
+
 #check how many rows you have to skip in .xlsx file (usually 1)
-files <- list.files(path.rawdata,pattern='*.xlsx')
-all_data_raw <- lapply(files, function(file) read_excel(file))
-rawdata <- bind_rows(all_data_raw)
+files <- list.files(pattern='*.xlsm')
+all_data_raw_spx <- lapply(files, function(file) read_excel(file, sheet = 4))
+all_data_raw_stoxx <- lapply(files, function(file) read_excel(file, sheet = 5))
+rawdata_spx <- bind_rows(all_data_raw_spx)
+rawdata_stoxx <- bind_rows(all_data_raw_stoxx)
+
+#clean
+names(rawdata_stoxx)[1] <- "variable"
+names(rawdata_spx)[1] <- "variable"
+
+#set number of characteristics
+n_var <- 5
+
+factors <- c("price","mval","mk2b","pe","beta")
+
+rawdata <- rbind(rawdata_spx,rawdata_stoxx)%>%
+  mutate(factor = rep(factors, length.out = n()), .before = "variable")
+
+static_data <- rawdata%>%
+  select(3:11)%>%
+  clean_names()%>%
+  distinct()
 
 #use only month and year for date since we optimize monthly
-names(rawdata)[-1] <-  format(as.Date(as.numeric(names(rawdata)[-1]), 
-                                      origin = "1899-12-30"), "%m/%Y")
-
-#excel sometimes has weird name for first column
-names(rawdata)[1] <- "Name"
+names(rawdata)[-c(1:12)] <-  format(as.Date(as.numeric(names(rawdata)[-c(1:12)]), 
+                                            origin = "1899-12-30"), "%m/%Y")
 
 #deal with missing values
-data_clean <-  rawdata %>%
+data_clean <- rawdata%>%
   as.data.frame()%>%
   mutate(group = rep(1:(n()/5), each=5))%>% 
-  select(group, everything())%>%
-  mutate(Name = na_if(Name, "#ERROR"))%>%
-  group_by(group)%>%
-  fill(Name, .direction = "downup")%>%
+  mutate(variable = na_if(variable, "#ERROR"))%>%
+  group_by(group) %>%
   ungroup()%>%
-  mutate(Name = gsub("-","", Name))%>%
+  fill(variable, .direction = "downup")%>%
+  ungroup()%>%
+  mutate(variable = gsub("-","", variable))%>%
   mutate_all(funs(replace(., grepl("^\\$\\$ER", .), NA)))%>%
   t()%>%
-  as.data.frame()%>%
-  slice(-1)%>% 
-  row_to_names(row_number = 1)
+  as.data.frame()
+
+unique_colnames <- as.data.frame(paste(data_clean["ISIN",],data_clean["factor",],data_clean["group",], sep = "_"))%>%
+  t()%>%
+  as.data.frame()
+
+data_clean <- bind_rows(data_clean,unique_colnames)
+
+data_clean_final <- data_clean%>%
+  row_to_names(315, remove_rows_above = FALSE, remove_row = TRUE)%>%
+  clean_names()
+
+data_clean_sub <- data_clean_final[-c(1:13,314), ]
+
+
 
 #save date vector
-dates <- rownames(data_clean)
+dates <- rownames(data_clean_sub)
 
-#deal with duplicate names
-colnames(data_clean) <- make.unique(colnames(data_clean), sep = "_")
-
-#colnames are easier processed when cleaned
-data_clean <- clean_names(data_clean)
-
-#turn all columns to numeric for later processing
-setDT(data_clean)
-
-data_clean <- data_clean[, lapply(.SD, as.numeric)]
-
-
-data_clean <- setDF(data_clean)
+data_clean_sub <- data_clean_sub%>%
+  lapply(as.numeric)%>%
+  as.data.frame()%>%
+  clean_names()
 
 #turn all values of dead companies to NA from the time they delist
-n <- 5
 
-# Split the dataframe into smaller dataframes
-smaller_dataframes <- split.default(data_clean, (seq_along(data_clean) - 1) %/% n)
+smaller_dataframes <- split.default(data_clean_sub, (seq_along(data_clean_sub) - 1) %/% n_var)
 
 replace_first_na_with_na <- function(df) {
   df[apply(df, 1, function(row) is.na(row[1])), ] <- NA
@@ -84,15 +104,14 @@ smaller_dataframes <- lapply(smaller_dataframes, replace_first_na_with_na)
 
 data_clean_final <- do.call(cbind, smaller_dataframes)
 
-
-rownames(data_clean_final) <- rownames(data_clean)
+colnames(data_clean_final) <- colnames(data_clean_sub)
 
 #create dataframe for each characteristic
-data.price     = data_clean[,seq(1, ncol(data_clean_final), 5) ]     
-data.mrktvl    = data_clean[,seq(2, ncol(data_clean_final), 5) ]    
-data.mrkt2book = data_clean[,seq(3, ncol(data_clean_final), 5) ]
-data.PER       = data_clean[,seq(4, ncol(data_clean_final), 5) ]
-data.beta      = data_clean[,seq(5, ncol(data_clean_final), 5) ]
+data.price     = data_clean_final[,seq(1, ncol(data_clean_final), n_var) ]     
+data.mrktvl    = data_clean_final[,seq(2, ncol(data_clean_final), n_var) ]    
+data.mrkt2book = data_clean_final[,seq(3, ncol(data_clean_final), n_var) ]
+data.PER       = data_clean_final[,seq(4, ncol(data_clean_final), n_var) ]
+data.beta      = data_clean_final[,seq(5, ncol(data_clean_final), n_var) ]
 
 #calculate returns
 data.returns = ((data.price/shift(data.price))-1)[-1,]   # arithmetic returns instead of log returns
@@ -107,20 +126,21 @@ data.beta      = cbind(dates,data.beta)
 dates <- dates[-1]
 
 data.returns   = cbind(dates,data.returns) 
-
+colnames(data.returns) <- gsub("_.+", "_returns", colnames(data.returns))
 
 #save as R Data file
-saveRDS(paste(path.data,data.price, "price_data_25Y",sep=""))
-saveRDS(paste(path.data,data.mrktvl, "mrktvl_data_25Y",sep=""))
-saveRDS(paste(path.data,data.mrkt2book, "mrkt2book_data_25Y",sep=""))
-saveRDS(paste(path.data,data.PER, "PER_data_25Y",sep=""))
-saveRDS(paste(path.data,data.beta, "beta_data_25Y",sep=""))
-
+saveRDS(data.price, "price_data")
+saveRDS(data.mrktvl, "mrktvl_data")
+saveRDS(data.mrkt2book, "mrkt2book_data")
+saveRDS(data.PER, "PER_data")
+saveRDS(data.beta, "beta_data")
+saveRDS(data.returns, "returns_data")
+saveRDS(static_data, "static_data")
 
 # save as CSV files
-write.csv(data.price, paste(path.data, country,  "_price_data.csv", sep="")) # add; "_", lastdate, "_", firstdate,
-write.csv(data.mrktvl, paste(path.data, country,  "_mrktvl_data.csv", sep="")) # add; "_", lastdate, "_", firstdate,
-write.csv(data.mrkt2book, paste(path.data, country,  "_mrkt2book_data.csv", sep="")) # add; "_", lastdate, "_", firstdate,
-write.csv(data.PER, paste(path.data, country,  "_PER_data.csv", sep="")) # add; "_", lastdate, "_", firstdate,
-write.csv(data.beta, paste(path.data, country,  "_beta_data.csv", sep="")) # add; "_", lastdate, "_", firstdate,
-write.csv(data.returns, paste(path.data, country,  "_returns_data.csv", sep=""))# add; "_", lastdate, "_", firstdate,
+write.csv(data.price, "_price_data.csv") # add; "_", lastdate, "_", firstdate,
+write.csv(data.mrktvl, "_mrktvl_data.csv") # add; "_", lastdate, "_", firstdate,
+write.csv(data.mrkt2book,"_mrkt2book_data.csv") # add; "_", lastdate, "_", firstdate,
+write.csv(data.PER, "_PER_data.csv") # add; "_", lastdate, "_", firstdate,
+write.csv(data.beta, "_beta_data.csv") # add; "_", lastdate, "_", firstdate,
+write.csv(data.returns, "_returns_data.csv")# add; "_", lastdate, "_", firstdate,
