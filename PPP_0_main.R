@@ -4,7 +4,7 @@
 
 ## main script
 
-## last changes 2024/01/28
+## last changes 2024/06/18
 
 ################################################################################
 #This is the main script for the Parametric Portfolio Policy (PPP) model 
@@ -96,22 +96,24 @@ try(if(between(trim.price,0,100)==FALSE) stop("trim parameter needs to be betwee
 #gamma = 5 
 
 ## input raw data paths
-path.rawdata <- "Insert the path to raw data here" #make sure your wd only contains .xlsx files you want to import 
-
+path.rawdata <- "C:\\Users\\pako1\\Desktop\\PMP\\0_PPP tidyfinance\\Input Data -2024-06-17\\SP500\\" #make sure your wd only contains .xlsx files you want to import 
 
 ## input file paths
-path.data <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\2024_01\\SPX 25Y\\"
-path2.data <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\2024_01\\STOXX 600 25Y\\"
+#path.data <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\2024_01\\SPX 25Y\\"
+path.data <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\05_2024\\"
+path2.data <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\05_2024\\"
+#path2.data <- "C:\\Users\\pako1\\Desktop\\PMP\\PMP material\\0_PPP model 2023\\Data\\25Y\\2024_01\\STOXX 600 25Y\\"
+path.data <- "C:\\Users\\pako1\\Desktop\\PMP\\0_PPP tidyfinance\\Input Data -2024-06-17\\cleaned data\\"
 
 ## output file paths
-path.output = "C:\\Users\\pako1\\Desktop\\PMP\\0_PPP tidyfinance\\Output 2024-01-10\\"
+path.output = "C:\\Users\\pako1\\Desktop\\PMP\\0_PPP tidyfinance\\Output 2024-06-17\\"
 
 ## Program file paths
 path.program = "C:\\Users\\pako1\\Desktop\\PMP\\0_PPP tidyfinance\\PPP Code\\"
 
 # country files used (for naming)
 country <- "Spx_25Y"
-country2 <- "Stoxx_600_25Y"
+country2 <- "Stoxx_25Y"
 
 ### Set weight constraints
 #n_weights=50  # number of weights to be estimated

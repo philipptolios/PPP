@@ -4,7 +4,7 @@
 
 ## data loading and pre-processing script
 
-## last changes 2024/01/11
+## last changes 2024/06/18
 
 ################################################################################
 #This is the data pre-processing script for the Parametric Portfolio Policy (PPP) model 
@@ -19,32 +19,57 @@
 # Notes:
 # IT'S A TOTAL MESS AND DESPERATELY NEEDS TO BE PROGRAMMED IN A MORE FLEXIBLE AND LESS HARD-CODED WAY!!
 ################################################################################
+##### To do: Keneth French data: 
+############ Loop for as often as months are missing in French data...
+##
 
 
 ################################# load data
 
 
-px   <- readRDS("price_data")
-rets <- readRDS("returns_data")
-mtb  <- readRDS("mrkt2book_data")
-mc   <- readRDS("mrktvl_data")
-per  <- readRDS("PER_data")
-bt   <- readRDS("beta_data")
+px   <- read_csv(paste0(path.data,country, "_price_data.csv"))
+rets <- read_csv(paste0(path.data,country, "_returns_data.csv"))
+mtb  <- read_csv(paste0(path.data,country, "_mrkt2book_data.csv"))
+mc   <- read_csv(paste0(path.data,country, "_mrktvl_data.csv"))
+per  <- read_csv(paste0(path.data,country, "_PER_data.csv"))
+bt   <- read_csv(paste0(path.data,country, "_beta_data.csv"))
 
+'
+px2   <- read_csv(paste0(path2.data,country2, "_price_data.csv"))
+rets2 <- read_csv(paste0(path2.data,country2, "_returns_data.csv"))
+mtb2  <- read_csv(paste0(path2.data,country2, "_mrkt2book_data.csv"))
+mc2   <- read_csv(paste0(path2.data,country2, "_mrktvl_data.csv"))
+per2  <- read_csv(paste0(path2.data,country2, "_PER_data.csv"))
+bt2   <- read_csv(paste0(path2.data,country2, "_beta_data.csv"))
 #characteristics=c("Market to book", "P/E-Ratio","Beta", "Market Cap.")
-
+'
 
 ## Reshape variables to matrices ##
 # dropped first date in characteristics because we loose one observation to calculate the returns
 # drop first column as it is the dates, not firms (ugly build around, should be fixed in data loading)
-PEratio = per[-1,]
-mkt2bk  = mtb[-1,]
-beta    = bt[-1,]
-mktcap  = mc[-1,]
-prices  = px[-1,]
-ret     = rets[,] # returns don't have observations in first row ()
+PEratio = per[-1,-1]
+mkt2bk  = mtb[-1,-1]
+beta    = bt[-1,-1]
+mktcap  = mc[-1,-1]
+prices  = px[-1,-1]
+ret     = rets[,-1] # returns don't have observations in first row ()
 
-### all start on 01 of month, while downloaded at the end of the month
+'## european stocks 
+prices2  = px2[-1,-1]
+mkt2bk2  = mtb2[-1,-1]
+beta2    = bt2[-1,-1]
+mktcap2  = mc2[-1,-1]  
+PEratio2 = per2[-1,-1]
+ret2     = rets2[,-1] ' # returns don't have observations in first row ()
+
+'### all start on 01 of month, while downloaded at the end of the month
+sim.m2b     <- merge(mkt2bk,mkt2bk2, by="dates")
+sim.mc      <- merge(mktcap,mktcap2, by="dates")
+sim.PEr     <- merge(PEratio,PEratio2, by="dates")
+sim.beta    <- merge(beta,beta2, by="dates")
+sim.returns <- merge(ret,ret2, by="dates")
+sim.price   <- merge(prices,prices2,by="dates")
+'
 sim.m2b     <- mkt2bk
 sim.mc      <- mktcap
 sim.PEr     <- PEratio
@@ -52,12 +77,15 @@ sim.beta    <- beta
 sim.returns <- ret
 sim.price   <- prices
 
+
 colnames(sim.m2b)[1]     <-"month"
 colnames(sim.mc)[1]      <-"month"
 colnames(sim.PEr)[1]     <-"month"
 colnames(sim.beta)[1]    <-"month"
 colnames(sim.returns)[1] <-"month"
-colnames(sim.price)[1]  <-"month"
+colnames(sim.price)[1]   <-"month"
+
+
 
 sim.m2b     <- sim.m2b |> pivot_longer(-month, names_to="stock", values_to = "m2b")
 sim.mc      <- sim.mc |> pivot_longer(-month, names_to="stock", values_to = "mktcap")
@@ -66,7 +94,8 @@ sim.beta    <- sim.beta|> pivot_longer(-month, names_to="stock", values_to = "be
 sim.returns <- sim.returns|> pivot_longer(-month, names_to="stock", values_to = "ret_adj")
 sim.price   <- sim.price|> pivot_longer(-month, names_to="stock", values_to = "price")
 
-name_cuttoff      <- regexpr('_', sim.m2b$stock)
+
+name_cuttoff      <- regexpr('_number_t', sim.m2b$stock)
 sim.m2b$stock     <- substr(sim.m2b$stock,start=1,stop=name_cuttoff-1)
 sim.mc$stock      <- substr(sim.mc$stock,start=1,stop=name_cuttoff-1)
 sim.PEr$stock     <- substr(sim.PEr$stock,start=1,stop=name_cuttoff-1)
@@ -74,7 +103,32 @@ sim.beta$stock    <- substr(sim.beta$stock,start=1,stop=name_cuttoff-1)
 sim.returns$stock <- substr(sim.returns$stock,start=1,stop=name_cuttoff-1)
 sim.price$stock   <- substr(sim.price$stock,start=1,stop=name_cuttoff-1)
 
-#distinct
+# 
+
+
+
+
+
+
+# #################################################################
+
+#characteristics=c("Market to book", "Beta", "Market Capital.")
+# 
+# colnames(sim.returns) <- c("month", "stock", "ret_adj")
+# colnames(sim.m2b)     <- c("month", "stock", "m2b")
+# colnames(sim.mc)      <- c("month", "stock", "mktcap")
+# colnames(sim.PEr)     <- c("month", "stock", "PEr")
+# colnames(sim.beta)    <- c("month", "stock", "beta")
+
+# 
+# sim.m2b$stock     <- strtrim(sim.m2b$stock,10)
+# sim.mc$stock      <- strtrim(sim.mc$stock,10)
+# sim.PEr$stock     <- strtrim(sim.PEr$stock,10)
+# sim.beta$stock    <- strtrim(sim.beta$stock,10)
+# sim.returns$stock <- strtrim(sim.returns$stock,10)
+# 
+# 
+# #################################################################
 sim.m2b <- sim.m2b |>
   distinct(stock, month, .keep_all = TRUE)
 sim.mc      <- sim.mc |>
@@ -87,6 +141,14 @@ sim.returns <- sim.returns |>
   distinct(stock, month,.keep_all = TRUE)
 sim.price   <- sim.price |>
   distinct(stock, month,.keep_all = TRUE)
+
+# 
+# sim.m2b     <- sim.m2b[complete.cases(sim.m2b),]
+# sim.mc      <- sim.mc[complete.cases(sim.mc),]
+# sim.PEr     <- sim.PEr[complete.cases(sim.PEr),]
+# sim.beta    <- sim.beta[complete.cases(sim.beta),]
+# sim.returns <- sim.returns[complete.cases(sim.returns),]
+#############
 
 ### create joint dataset
 # We need: ret_excess, momentum_lag size_lag _lag _lag, _lag, relative_mktrcap
@@ -107,14 +169,28 @@ sim.data <- sim.returns |>
   left_join(sim.price,
             by = c("month", "stock")
   )
-
 #####################################################################################
+# sim.data <- cbind(sim.returns, sim.m2b$m2b, sim.mc$mktcap, sim.PEr$PEr, sim.beta$beta)
+# colnames(sim.data) <- c("month", "stock", "ret_adj", "m2b", "mktcap", "PEr", "beta")
 head(sim.data)
 
+### kick out penny stocks
+
+
 # ## load data from SQL database
-
+# tidy_finance <- dbConnect(
+#   SQLite(),
+#   "C:/Users/pako1/Desktop/PMP/0_PPP tidyfinance/SQL_data/tidy_finance_r.sqlite",
+#   extended_types = TRUE
+# )
+# 
+# 
+# factors_ff3_monthly <- tbl(tidy_finance, "factors_ff3_monthly")
+# factors_ff3_monthly <- factors_ff3_monthly |> collect()
+# #factors_ff3_monthly <- factors_ff3_monthly |> mutate(rf=0, mkt_excess=0, month=unique(sim.data$month))
+#sim.data$month = as.Date(paste("01/",sim.data$month, sep=""), format='%d/%m/%Y')
 sim.data$month = as.Date(paste("01/",sim.data$month, sep=""), format='%d/%m/%Y')
-
+sim.data$month = as.Date(format(floor_date(ymd(sim.data$month), 'month'),"%Y-%m-%d"))
 #### retrieve Fama-French market data (used to compute CAPM)
 start_date <- min(sim.data$month)
 end_date <- max(sim.data$month)
@@ -132,7 +208,11 @@ factors_ff3_monthly <- factors_ff3_monthly_raw$subsets$data[[1]] |>
 
 
 ########################################################################
-#### incase most recent month is not (yet) in Fama-French dataset -->
+#### in case most recent month is not (yet) in Fama-French dataset -->
+
+##### Loop for as often as months are missing in French data...
+##
+
 factors_ff3_monthly <- factors_ff3_monthly |> 
   filter(month == max(month)) |> 
   mutate(month = month %m+% months(1)) |>
